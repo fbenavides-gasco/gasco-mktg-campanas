@@ -1,0 +1,49 @@
+SELECT  A.TELEFONO,
+        A.email,
+        A.genero,
+        A.rango_edad,
+        A.comuna_id AS comuna_compra,
+        A.paymentMethodDescription AS metodo_pago,
+        B.predict_calefont AS calefont,
+        B.predict_cocina AS cocina,
+        B.predict_estufa AS estufa,
+        B.predict_parrilla AS parrilla,
+        A.createdAt as fecha_compra,
+        A.tipo_pedido_bien AS canal,
+        A.p_CN02,
+        A.p_CN05,
+        A.p_CN11,
+        A.p_CN15,
+        A.p_CN45,
+        A.total_kilos_pedido,
+        A.total_con_descuento,
+        
+FROM(
+SELECT  *,
+        EXTRACT(YEAR FROM createdAt) AS YEAR,
+        EXTRACT(MONTH FROM createdAt) as MONTH,
+        CASE WHEN mes in (5,6,7,8,9) THEN 1 ELSE 0 END AS IND_TA,
+        CASE WHEN mes in (5,6,7,8,9) THEN total_kilos_pedido ELSE 0 END AS KILOS_TA,
+        CASE WHEN tipo_pedido_bien = 'OFFLINE' THEN customerNoIfOffline
+                WHEN tipo_pedido_bien = 'ONLINE' THEN mobile
+                ELSE mobile END AS Telefono,
+        CASE WHEN status = 'COMPLETED' THEN 'COMPLETADO' ELSE 'NO COMPLETADO' END AS ESTADO_PEDIDO, 
+
+FROM `gasco-analytics.gasco.pedidos_gasconnect_todos_javier`
+
+WHERE CAST(createdAt as DATE) >= @INI_DATE AND CAST(createdAt as DATE) <= @TER_DATE --SELECCIONA LOS PEDIDOS DE UN AÑO MOVIL
+AND isAnulled IS NULL     --PEDIDO NO ANULADO
+AND email IN ({email_click_string})
+AND TIPO_PEDIDO_BIEN IN ('OFFLINE', 'ONLINE')
+AND status = 'COMPLETED'
+)AS A
+
+LEFT JOIN(
+    SELECT  TELEFONO,
+            predict_calefont,
+            predict_cocina,
+            predict_estufa,
+            predict_parrilla
+    FROM `gasco-analytics.gasco_modelos.20210218_prediccion_modelo_uso_gas`
+)AS B
+ON(CAST(A.TELEFONO AS int64) = B.TELEFONO)
