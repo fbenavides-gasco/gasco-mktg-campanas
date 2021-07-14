@@ -31,9 +31,28 @@ clientes_open.head(2)
 clientes_open = clientes_open[['Email Address', 'Phone Number','Fecha envío', 'Fecha ventana','Opened','Clicked']]
 clientes_open.head(2)
 
+
+## Normalización de nombres columnas:
+def norm_col_name(df):
+    replacements = (
+        ("á", "a"),
+        ("é", "e"),
+        ("í", "i"),
+        ("ó", "o"),
+        ("ú", "u"),
+    )
+    col_names = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
+
+    for a,b in replacements:
+        col_names = col_names.str.replace(a,b)
+    df.columns = col_names
+    return df
+
+clientes_open = norm_col_name(clientes_open)
+
 ## Rango de fecha de evaluacion de la campaña
-fecha_ini_campana = clientes_open['Fecha envío'][0].date()
-fecha_ter_campana = clientes_open['Fecha ventana'][0].date()
+fecha_ini_campana = clientes_open['fecha_envio'][0].date()
+fecha_ter_campana = clientes_open['fecha_ventana'][0].date()
 print(fecha_ini_campana,fecha_ter_campana)
 
 ###############################################################################

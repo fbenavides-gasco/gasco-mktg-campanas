@@ -10,6 +10,7 @@ SELECT  A.TELEFONO,
         B.predict_parrilla AS parrilla,
         A.createdAt as fecha_compra,
         A.tipo_pedido_bien AS canal,
+--------------------------------------------------
         A.p_CN02,
         A.p_CN05,
         A.p_CN11,
@@ -33,7 +34,7 @@ FROM `gasco-analytics.gasco.pedidos_gasconnect_todos_javier`
 
 WHERE CAST(createdAt as DATE) >= @INI_DATE AND CAST(createdAt as DATE) <= @TER_DATE --SELECCIONA LOS PEDIDOS DE UN AÑO MOVIL
 AND isAnulled IS NULL     --PEDIDO NO ANULADO
-AND email IN ({email_click_string})
+--AND email IN ({email_click_string})
 AND TIPO_PEDIDO_BIEN IN ('OFFLINE', 'ONLINE')
 AND status = 'COMPLETED'
 )AS A
