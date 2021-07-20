@@ -4,7 +4,6 @@ Created on Tue Jul 13 11:26:53 2021
 
 @author: fbenavides
 """
-
 ###############################################################################
 #
 #               1° Parte: Evaluación clientes click/open
@@ -74,7 +73,7 @@ def info_conversion(df_clientes, data_eval, tipo):
 
 
 ## Lectura del dataframe.
-clientes_open = pd.read_excel('evaluaciones/Clima_29_06_2021.xlsx')
+clientes_open = pd.read_excel('evaluaciones/Clima_29_06_2021.xlsx',sheet_name=0)
 
 ## Conexion a bigquery
 client = GCP_conn()
@@ -102,8 +101,8 @@ print(len(df_open),len(df_click))
 
 ## Guardamos df_open y df_click en directorio correspondiente
 
-#df_open.to_csv('compras_clientes_open_20210629.csv', sep = ";")
-#df_click.to_csv('compras_clientes_click_20210629.csv', sep = ";")
+#df_open.to_csv('compras_clientes_open_RECETA_20210712.csv', sep = ";")
+#df_click.to_csv('compras_clientes_click_RECETA_20210712.csv', sep = ";")
 
 ###############################################################################
 
@@ -113,20 +112,35 @@ print(len(df_open),len(df_click))
 #
 ###############################################################################
 
-
-## Leemos dataframes desde carpetas de eval 
+## Leemos dataframes desde carpetas grupos
 df_obj     = pd.read_csv('grupos\experimento_clima_20210629_obj.csv')#,index=False)
 df_control = pd.read_csv('grupos\experimento_clima_20210629_control.csv') #,index=False)
 
-df_eval_obj     = data_eval.merge(df_obj, how = 'left',
-                                  left_on = 'email', right_on = 'email')
-df_eval_control = data_eval.merge(df_control, how = 'left',
-                                  left_on = 'email', right_on = 'email')
 
+####################
+##  2.1 Clientes  ##
+####################
 
+email_obj    = df_obj.email.unique()
+email_control = df_control.email.unique()
 
+email_eval = data_eval.email.unique()
 
+obj_compra     = list(set(email_obj) & set(email_eval))
+control_compra = list(set(email_control) & set(email_eval))
 
+print(100*len(obj_compra)/len(email_obj))
+print(100*len(control_compra)/len(email_control))
+##############################################################################
 
-#print(100*df_eval_obj.email.nunique()/df_obj.email.nunique())
-#print(100*df_eval_control.email.nunique()/df_control.email.nunique())
+###################
+##  2.1 Pedidos  ##
+###################
+
+#################
+##  2.1 Gasto  ##
+#################
+
+#####################
+##  2.1 Cilindros  ##
+#####################
