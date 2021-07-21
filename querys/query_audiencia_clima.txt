@@ -1,0 +1,41 @@
+WITH params AS (
+    SELECT 2 AS dias_forecast,
+           7 AS min_temp,
+           'rain' AS icon,
+           15 AS min_recency,
+           430 AS max_recency --original es 720 (cambiar a parametro)
+)
+
+SELECT  cl.*,
+        f.forecast_date,
+        f.forecasted_date,
+        f.apparentTemperatureMin,
+        f.apparentTemperatureMax,
+        f.flag_temp,
+        f.flag_rain,
+        IF(RAND() < 0.3,1,0) AS control -- 30% como grupo de control
+FROM `gasco-analytics.cliente.master_phone` AS cl
+
+INNER JOIN(
+    SELECT *
+    FROM(
+        SELECT  DATE(collected_time) AS forecast_date, -- fecha de obtencion del forecast
+                date AS forecasted_date,           -- fecha de forecast/observacion
+                city AS comuna,
+                icon,
+                summary,
+                precipProbability,
+                temperature,
+                apparentTemperatureMin,
+                apparentTemperatureMax,
+                IF(apparentTemperatureMin <= (SELECT min_temp FROM params),1,0) AS flag_temp,
+                IF(icon = (SELECT icon FROM params),1,0) AS flag_rain
+        FROM `gasco-analytics.supply.daily_darksky_weather_v2` 
+        WHERE DATE(collected_time) = CURRENT_DATE("America/Santiago")
+        AND DATE_DIFF(DATE(date), DATE(collected_time), DAY) = (SELECT dias_forecast FROM params)
+        AND type = 'forecast')
+    -- WHERE flag_temp > 0 OR flag_rain > 0
+) AS f
+ON cl.comuna = f.comuna
+
+WHERE cl.recency BETWEEN (SELECT min_recency FROM params) AND (SELECT max_recency FROM params)
