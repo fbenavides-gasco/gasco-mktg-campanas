@@ -101,7 +101,7 @@ df_clima = run_query_audiencia_clima(client,dia_referencia,dias_forecast,
 ######################################
 
 
-def criterio_clima(df_clima):
+def criterio_clima(df_clima:pd.DataFrame) -> pd.DataFrame:
     import pandas as pd
     import numpy  as np
 
@@ -131,42 +131,13 @@ def criterio_clima(df_clima):
     
     return( df_clima_2[df_clima_2['criterio'] > 0] )
 
-
-criterios_region = pd.read_excel('criterios_clima_regiones.xlsx',sheet_name = 'Regiones')
-criterios_RM     = pd.read_excel('criterios_clima_regiones.xlsx',sheet_name = 'RM')
-
-criterios_clima =  pd.concat([criterios_region,criterios_RM])
-print(criterios_clima['Región'].unique())
-criterios_clima.head(2)
-
-criterios_clima['Comuna'] = criterios_clima.Comuna.apply(normalize)
-criterios_clima.head(2)
-
-df_clima_2 = df_clima.merge(criterios_clima, how = 'left',
-                          left_on = 'comuna', right_on = 'Comuna')
-df_clima_2['Temperatura Mínima'] = df_clima_2['Temperatura Mínima'].fillna(7)
-df_clima_2['temperatura Máxima'] = df_clima_2['temperatura Máxima'].fillna(15)
-
-df_clima_2['Región'] = df_clima_2['Región'].fillna('RM')
-df_clima_2 = df_clima_2[df_clima_2['Región'].isin(['RM', 'VIII', 'I', 'V'])]
-
-df_clima_2['Temperatura Mínima'] = pd.to_numeric(df_clima_2['Temperatura Mínima'], errors='coerce')
-df_clima_2['temperatura Máxima'] = pd.to_numeric(df_clima_2['temperatura Máxima'], errors='coerce')
-
-cond_1 = df_clima_2['apparentTemperatureMax'] < df_clima_2['temperatura Máxima']
-cond_2 = df_clima_2['apparentTemperatureMin'] < df_clima_2['Temperatura Mínima']
-
-df_clima_2['flag_temp_2'] = np.where(cond_1 & cond_2,1, 0)
-
-df_clima_2['criterio'] = df_clima_2['flag_rain'] + df_clima_2['flag_temp_2']
-base_envio = df_clima_2[df_clima_2['criterio'] > 0]
-base_envio.criterio.unique()
+base_envio = criterio_clima(df_clima)
 
 #################################################################
 ##  eliminar emails genericos/malos y comunas con solo 1 email ##
 #################################################################
 
-def limpiar_emails_comunas(df_clima):
+def limpiar_emails_comunas(df_clima:pd.DataFrame) -> pd.DataFrame:
     emails_genericos  = ['noresponder@gasconnect.cl', 'default@default.com']
     
     df_clima = df_clima[~df_clima['email'].isin(emails_genericos)]
@@ -180,16 +151,7 @@ def limpiar_emails_comunas(df_clima):
 
     return(df_clima)
 
-emails_genericos  = ['noresponder@gasconnect.cl', 'default@default.com']
-
-df_clima_filtrado = base_envio[~base_envio['email'].isin(emails_genericos)]
-
-a = df_clima_filtrado.groupby('comuna').count().reset_index()
-comunas_descarte = list(a[a['phone'] == 1].comuna.unique())
-print(comunas_descarte)
-
-df_clima_filtrado = df_clima_filtrado[~df_clima_filtrado['comuna'].isin(comunas_descarte)]
-df_clima_filtrado['apparentTemperatureMin'] = df_clima_filtrado['apparentTemperatureMin'].round().apply(int)
+base_envio = limpiar_emails_comunas(base_envio)
 
 ##################################
 ##  Generación de bases (GO/GC) ##
@@ -202,11 +164,11 @@ columnas_y = ['comuna']
 
 from sklearn.model_selection import train_test_split
 
-clima_obj, clima_control, y_obj, y_control = train_test_split(df_clima_filtrado[columnas_x], 
-                                                              df_clima_filtrado[columnas_y], 
+clima_obj, clima_control, y_obj, y_control = train_test_split(base_envio[columnas_x], 
+                                                              base_envio[columnas_y], 
                                                               test_size    = 0.30, 
                                                               random_state = 42, 
-                                                              stratify     = df_clima_filtrado[columnas_y])
+                                                              stratify     = base_envio[columnas_y])
 
 df_obj = pd.concat([clima_obj,y_obj], axis = 1)
 #df_obj = df_obj[['region_id','comuna_id','telefono','email']]
